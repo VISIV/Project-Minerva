@@ -1,3 +1,41 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
+
 # Built application files
 *.apk
 *.ap_
@@ -53,3 +91,4 @@ google-services.json
 freeline.py
 freeline/
 freeline_project_description.json
+
