@@ -1,6 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <ProgConfig.h>
 #include <SerialManager.h>
+#include <UserData.h>
 
 WiFiServer server(80);
 int resp_index = 0;
@@ -9,24 +10,28 @@ int resp_index = 0;
 //                           Class Object Declaration
 // -------------------------------------------------------------------
 SerialManager serialManager(9600);
+UserData userData;
 // -------------------------------------------------------------------
 void setupWiFi(){
   WiFi.mode(WIFI_AP);
   uint8_t mac[WL_MAC_ADDR_LENGTH];
   const char PSK[] = WIFI_PSK;
-  // Store ESP MAC Address in variable
+
   WiFi.softAPmacAddress(mac);
-  // Set last 2 bytes of mac address as IP and Gateway
+
   IPAddress local_ip(192,168,mac[WL_MAC_ADDR_LENGTH-2],mac[WL_MAC_ADDR_LENGTH-1]);
   IPAddress gateway(192,168,mac[WL_MAC_ADDR_LENGTH-2],mac[WL_MAC_ADDR_LENGTH-1]);
   IPAddress subnet(WIFI_SUBNET);
+
+
   WiFi.softAPConfig(local_ip, gateway, subnet);
 
-  // Add last 2 bytes of MAc Address to AP SSID
   String macID =  String(mac[WL_MAC_ADDR_LENGTH -2],HEX) +
                   String(mac[WL_MAC_ADDR_LENGTH -1],HEX);
   macID.toUpperCase();
+
   String AP_SSID =  WIFI_SSID + macID;
+
 
   char SSID[AP_SSID.length() + 1];
   memset(SSID,0,AP_SSID.length() + 1);
@@ -34,13 +39,11 @@ void setupWiFi(){
     SSID[i] = AP_SSID.charAt(i);
   }
 
-  // Start AP and begin server
   WiFi.softAP(SSID,PSK);
   server.begin();
-
-
   #if DEBUG
     Serial.println(String("AP Successfuly Started"));
+
     Serial.printf("\nSSID: %s", SSID);
     Serial.printf("\nPSK: %s", PSK);
     Serial.printf("\nIP Address: ");Serial.print(local_ip);
@@ -50,11 +53,9 @@ void setupWiFi(){
   #endif
 }
 
-bool prepareResponseContent(String type, String response){
-  #if DEBUG
-      Serial.println("Client Requesting : " + type);
-  #endif
-  if(type.equals("paramGet")){
+String prepareResponseContent(int type, uint8_t *e){
+  String response;
+  if(type == 1){
     //response = "response here";
     response = "<html>\r\n";
     response += "<body><h1>Hello, World! ";
@@ -62,64 +63,49 @@ bool prepareResponseContent(String type, String response){
     response += "</h1></body></html>\n";
   }
   else{
-    // Set response to Invalid request
-    response = "";
-    return false;
+    response = "Invalid Request";
+    *e = 1;
   }
-  return true;
+  *e = 0;
+  return response;
 }
 
 void serverUpdate(){
-  bool result = false;
-  String requestType = "";
-  String content = "";
-
-  // Check if there is a request
+  uint8_t err;
   WiFiClient client = server.available();
   if(!client){
-    // Return back if no requests
+    #if DEBUG
+        //Serial.println("No client requests");
+    #endif
     return;
   }
 
   // Read client request
   String req = client.readStringUntil('\r');
+  #if DEBUG
+      Serial.println("Client Request : "+req);
+  #endif
   client.flush();
 
-  requestType = "paramGet";
-
-  #if DEBUG
-      Serial.println("Client Request : " + req);
-  #endif
+  // Do requests here
 
   // Prepare response
-  String header = "HTTP/1.1 ";
-  // Request data based from request
-  result = prepareResponseContent(requestType,content);
-  if(result == true){
-    // Set Response status code to 200 on valid request
-    header += "200 OK\r\n";
-  }
-  else{
-    // Set Response status code to 403 on bad request
-    header += "403 Bad Request\r\n";
-  }
+  String content = prepareResponseContent(1,&err);
+  String header = "HTTP/1.1 200 OK\r\n";
   header += "Content-Length: ";
   header += content.length();
   header += "\r\n";
   header += "Connection: close\r\n\r\n";
 
-  // Send response to client
   client.print(header + content);
   delay(1);
+  #if DEBUG
+      Serial.println("Server Response : "+ header + content);
+  #endif
+
   client.flush();
 
-  #if DEBUG
-      Serial.println("Server Response : \n"+ header + content+"----------------");
-  #endif
 }
-
-
-
 
 void setup(){
   #if DEBUG
