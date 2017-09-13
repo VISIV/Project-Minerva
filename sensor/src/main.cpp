@@ -35,7 +35,7 @@ String prepareResponseContent(int type, uint8_t *e){
 void setup(){
   #if DEBUG
     Serial.begin(9600);
-    while(!Serial.available()){while(Serial.available()){Serial.read();}}
+    //while(!Serial.available()){while(Serial.available()){Serial.read();}}
   #endif
   httpManager.begin();
 }
