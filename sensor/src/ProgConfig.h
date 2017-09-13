@@ -26,3 +26,10 @@
 //               TIMER DEFINES
 //---------------------------------------------------------
 #define RESPONSE_WAIT 5
+
+//---------------------------------------------------------
+//               EEPROM DEFINES
+//---------------------------------------------------------
+#define USERNAME_SIZE 32
+#define PASSWORD_SIZE 32
+#define SYSTEMID_SIZE 16
