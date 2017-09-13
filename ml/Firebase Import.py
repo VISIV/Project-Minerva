@@ -1,3 +1,4 @@
+#imports data from firebase, not yet working properly
 import pyrebase
 import csv
 
