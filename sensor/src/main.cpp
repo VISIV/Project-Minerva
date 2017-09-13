@@ -1,10 +1,15 @@
 #include <ESP8266WiFi.h>
-#include <WiFiConfig.h>
-#include <string.h>
+#include <ProgConfig.h>
+#include <SerialManager.h>
 
 WiFiServer server(80);
 int resp_index = 0;
 
+// -------------------------------------------------------------------
+//                           Class Object Declaration
+// -------------------------------------------------------------------
+SerialManager serialManager(9600);
+// -------------------------------------------------------------------
 void setupWiFi(){
   WiFi.mode(WIFI_AP);
   uint8_t mac[WL_MAC_ADDR_LENGTH];

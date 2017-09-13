@@ -3,6 +3,7 @@
 //               DEBUG
 //---------------------------------------------------------
 #define DEBUG true
+#define ESP_DEBUG true
 #define DEBUG_MODE UART // UART OR SD LOG
 #if DEBUG
 #if DEBUG_MODE == UART
@@ -20,3 +21,8 @@
 #define WIFI_LOCAL_IP 192,168,1,1
 #define WIFI_GATEWAY 192,168,1,1
 #define WIFI_SUBNET 255,255,255,0
+
+//---------------------------------------------------------
+//               TIMER DEFINES
+//---------------------------------------------------------
+#define RESPONSE_WAIT 5
