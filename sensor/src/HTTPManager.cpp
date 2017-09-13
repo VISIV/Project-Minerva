@@ -51,7 +51,7 @@ void HTTPManager::setupWiFiAP(){
 }
 
 void HTTPManager::update(){
-
+  HTTPStatusCodes err;
   WiFiClient client = server->available();
   if(!client){
     #if DEBUG
@@ -61,22 +61,36 @@ void HTTPManager::update(){
   }
 
   // Read client request
-  String req = client.readStringUntil('\r');
+  char requestBuffer[REQUEST_BUFFER_SIZE];
+  memset(requestBuffer,0,REQUEST_BUFFER_SIZE);
+  //String req = client.readStringUntil('\r');
+  if(client.readBytesUntil('\r', requestBuffer, REQUEST_BUFFER_SIZE) > REQUEST_BUFFER_SIZE){
+    Serial.println("Request Buffer overload");
+  }
+
   #if DEBUG
-      Serial.println("Client Request : "+req);
+      Serial.print("\n\nClient Request : ");
+      Serial.println(requestBuffer);
   #endif
   client.flush();
 
   // Get client command here
-
+  String content = sliceClientRequest(requestBuffer,&err);
 
   // Prepare response
-  String content = "Response";
-  String header = "HTTP/1.1 200 OK\r\n";
+  //String content = "Response";
+  String header;
+  if(err){
+    header = "HTTP/1.1 200 OK\r\n";
+  }else{
+    header = "HTTP/1.1 400 Bad Request\r\n";
+  }
+
   header += "Content-Length: ";
   header += content.length();
   header += "\r\n";
   header += "Connection: close\r\n\r\n";
+
 
   client.print(header + content);
   delay(1);
@@ -86,3 +100,97 @@ void HTTPManager::update(){
 
   client.flush();
 }
+
+String HTTPManager::sliceClientRequest(char *request,enum HTTPStatusCodes *err){
+  String content = "";
+  // Read Request type (GET,POST)
+  // Not being used for now
+  char *requestType = strtok(request,"/");
+  #if DEBUG
+    Serial.print("Request Type: ");
+    Serial.println(requestType);
+  #endif
+
+  // Read command from android (paramSet,paramGet)
+  char *reqCommand = strtok(NULL,"/");
+  #if DEBUG
+    Serial.printf("Command: -%s-\n",reqCommand);
+  #endif
+  // If command is paramSet
+  if(!strcmp(reqCommand,"paramSet")){
+    #if DEBUG
+      Serial.println("Request Command: paramSet");
+    #endif
+
+    // Check Credentials from android app
+    char *user = strtok(NULL,"/");
+    char *pass = strtok(NULL,"/");
+    #if DEBUG
+      Serial.printf("Username: %s\nPassword: %s\n",user,pass);
+    #endif
+
+    // test credentials ----------------------------------------------- replace in release
+    if( (!strcmp(user,"testuser")) && (!strcmp(pass,"testpass")) ){
+      char *var = strtok(NULL,"/");
+      if(!strcmp(var,"pH")){
+        char *val = strtok(NULL,"/");
+        Serial.print("Setting pH to: ");
+        Serial.println(val);
+      }
+      else{
+        *err = HTTP_INVALID;
+        content += "Request Invalid:H_001";
+        return content;
+      }
+    }
+    // on credential mismatch, return status code
+    else{
+      *err = HTTP_INVALID_CREDENTIALS;
+      content =+ "Request Invalid:H_002";
+      return content;
+    }
+  }
+
+  // If command is paramGet
+  else if(!strcmp(reqCommand,"paramGet")){
+    #if DEBUG
+      Serial.println("Request Command: paramGet");
+    #endif
+
+  }
+  else{
+    *err = HTTP_INVALID_COMMAND;
+    content =+ "Request Invalid:H_003";
+    return content;
+  }
+}
+#if DEBUG
+#endif
+
+void HTTPManager::paramSet(){
+  char *reqCommand = strtok(NULL,"/");
+
+}
+void HTTPManager::paramGet(){
+
+}
+
+
+
+/*Request = Method Request-URL HTTP-1.1\r\n
+Response = Header+message
+
+Type: paramSet, paramGet
+192.168.xxx.xxx/paramSet/~memcpy(stuct)/
+GET /paramSet/user/pass/var/~hash/checksum/ HTTP-1.1\r\n
+GET /paramGet/var/~hash/checksum/ HTTP-1.1\r\n
+
+Header:
+HTML\1.1 200 OK\r\n
+Content-Length: content\r\n
+Content-Type: data/parameters\r\n
+Connection: Close\r\n\r\n
+
+
+HTML\1.1 400 Bad Request
+*/
