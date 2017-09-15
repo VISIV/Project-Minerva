@@ -81,6 +81,7 @@ void HTTPManager::update(){
   // Get client command here
   String content = parseClientRequest(request,&err);
   // Prepare response
+
   //String content = "Response";
   String header;
   if(err){
@@ -110,7 +111,7 @@ String HTTPManager::parseClientRequest(char *request,enum HTTPStatusCodes *err){
   // Not being used for now
   if(request == NULL){
     *err = HTTP_NULL_REQUEST;
-    content += "\"Error\":\"H_006\",";
+    content += "\"Error\":\"H_001\",\"end\":0}";
     return content;
   }
   int index = 1;
@@ -119,10 +120,11 @@ String HTTPManager::parseClientRequest(char *request,enum HTTPStatusCodes *err){
     Serial.print("Command: ");
     Serial.println(command);
   #endif
-  bool user = false;
-  bool pass = false;
-  bool syID = false;
+  bool user = false,pass = false,syID = false,login = false;
+
+
   while(command != NULL){
+    bool commandDone = false;
     // Check whether ID, PS, and SID Credentials match
     if(!strncmp(command,"ID=",3)){
       if(!strcmp(command+3,"testuser")){
@@ -148,10 +150,12 @@ String HTTPManager::parseClientRequest(char *request,enum HTTPStatusCodes *err){
     }else if((user && pass && syID)){
       // ID, PS, SID needs to be first 3 entries in the request
       // otherwise, request will be invalid
-
+      if(login == false){
+        content += "\"login\":1,";
+        login = true;
+      }
       // Add commands here
       // just follow conditional format
-      char *val;
       if(!strcmp(command,"getPH")){
         #if DEBUG
           Serial.println("getPH Command");
@@ -161,23 +165,24 @@ String HTTPManager::parseClientRequest(char *request,enum HTTPStatusCodes *err){
         #if DEBUG
           Serial.println("setPH Command");
         #endif
-        val = command+6;
-        pH = atof(val);
+        pH = atof(command + 6);
         content += "\"pH\":" + String(pH)+ ",";
-      }else{
-        #if DEBUG
-          Serial.println("End of Commands");
-        #endif
-        *err = HTTP_SUCCESS;
       }
+    }else if((index >= 3) && !(user && pass && syID)){
+      #if DEBUG
+        Serial.println("Credentials Mismatch");
+      #endif
+      *err = HTTP_CREDENTIALS_MISSING;
+      content += "\"Error\":\"H_002\",\"end\":" + String(index) +"}";
+      return content;
     }else{
       // If ID, PS, and SID are not found within first 3 entries or
       // if credentials mismatch, returns error
       #if DEBUG
-        Serial.println("Credentials Missing or mismatch");
+        Serial.println("Credentials Missing");
       #endif
-      *err = HTTP_CREDENTIALS_MISSING;
-      content += "\"Error\":\"H_006\",";
+      *err = HTTP_CREDENTIALS_MISMATCH;
+      content += "\"Error\":\"H_003\",\"end\":" + String(index) +"}";
       return content;
     }
     command = strtok(NULL,"/");
