@@ -58,3 +58,7 @@ freeline_project_description.json
 .piolibdeps
 .clang_complete
 .gcc-flags.json
+
+# Ignore app and ml files
+ml/
+android/
