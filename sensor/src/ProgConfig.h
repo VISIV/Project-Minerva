@@ -38,3 +38,9 @@
 #define USERNAME_SIZE 32
 #define PASSWORD_SIZE 32
 #define SYSTEMID_SIZE 16
+
+//---------------------------------------------------------
+//               SENSOR DEFINES
+//---------------------------------------------------------
+#define MAX_SENSOR_NAME 30
+#define HRSTOMS 360000
